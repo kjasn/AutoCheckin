@@ -1,0 +1,32 @@
+name: Daily Check-in
+
+on:
+  schedule:
+    # 每天的 10:33 UTC 时间执行
+    - cron: '33 10 * * *'
+
+jobs:
+  checkin:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: '1.22.5'
+
+    - name: Install dependencies
+      run: go mod download
+
+    - name: Run Check-in
+      env:
+        USERNAME: ${{ secrets.USERNAME }}
+        PASSWORD: ${{ secrets.PASSWORD }}
+      run: |
+        # 生成一个 1 到 20 分钟的随机延迟
+        DELAY=$((RANDOM % 20 + 1))
+        echo "Sleeping for $DELAY minutes..."
+        sleep "${DELAY}m"
+        go run main.go
