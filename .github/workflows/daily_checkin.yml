@@ -27,8 +27,8 @@ jobs:
           USERNAME: ${{ secrets.USERNAME }}
           PASSWORD: ${{ secrets.PASSWORD }}
         run: |
-          # 生成一个 1 到 20 分钟的随机延迟
-          DELAY=$((RANDOM % 20 + 1))
-          echo "Sleeping for $DELAY minutes..."
-          sleep "${DELAY}m"
+          # 生成一个 1 到 10 分钟的随机延迟
+          # DELAY=$((RANDOM % 10 + 1))
+          # echo "Sleeping for $DELAY minutes..."
+          # sleep "${DELAY}m"
           go run main.go

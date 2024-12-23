@@ -27,7 +27,7 @@ type Config struct {
 
 const (
 	BASE = "./"
-	LOG  = BASE + "dailyCheckin.log"
+	// LOG  = BASE + "dailyCheckin.log"
 
 	// 第一个网站签到配置
 	URL1       = "https://yc.yuchengyouxi.com/wp-admin/admin-ajax.php"
@@ -46,58 +46,44 @@ const (
 
 var (
 	client *http.Client
-	logger *log.Logger
+	// logger *log.Logger
 	config Config
 )
 
 func init() {
-	// 确保BASE目录存在
-	if err := os.MkdirAll(BASE, 0666); err != nil {
-		log.Printf("创建目录失败: %v", err)
-	}
 
-	// 设置日志
-	logFile, err := os.OpenFile(LOG, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	if err != nil {
-		log.Printf("无法创建日志文件: %v", err)
-	} else {
-		logger = log.New(io.MultiWriter(os.Stdout, logFile), "", log.LstdFlags)
-	}
+	/*
+		// 确保BASE目录存在
+		if err := os.MkdirAll(BASE, 0666); err != nil {
+			log.Printf("创建目录失败: %v", err)
+		}
+			// 设置日志
+			logFile, err := os.OpenFile(LOG, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+			if err != nil {
+				log.Printf("无法创建日志文件: %v", err)
+			} else {
+				logger = log.New(io.MultiWriter(os.Stdout, logFile), "", log.LstdFlags)
+			}
+	*/
 
 	// 读取配置文件
 	configData, err := os.ReadFile(CONFIG_FILE)
 	if err != nil {
-		if logger != nil {
-			logger.Fatal("无法读取配置文件:", err)
-		} else {
-			log.Fatal("无法读取配置文件:", err)
-		}
+		log.Fatal("无法读取配置文件:", err)
 	}
 
 	if err := json.Unmarshal(configData, &config); err != nil {
-		if logger != nil {
-			logger.Fatal("解析配置文件失败:", err)
-		} else {
-			log.Fatal("解析配置文件失败:", err)
-		}
+		log.Fatal("解析配置文件失败:", err)
 	}
 
 	if config.Username == "" || config.Password == "" {
-		if logger != nil {
-			logger.Fatal("配置文件中缺少用户名或密码")
-		} else {
-			log.Fatal("配置文件中缺少用户名或密码")
-		}
+		log.Fatal("配置文件中缺少用户名或密码")
 	}
 
 	// 创建带cookie jar的HTTP客户端
 	jar, err := cookiejar.New(nil)
 	if err != nil {
-		if logger != nil {
-			logger.Fatal("创建cookie jar失败:", err)
-		} else {
-			log.Fatal("创建cookie jar失败:", err)
-		}
+		log.Fatal("创建cookie jar失败:", err)
 	}
 	client = &http.Client{
 		Jar:     jar,
@@ -136,8 +122,8 @@ func login1() error {
 	return nil
 }
 
-// signIn1 执行第一个网站的签到
-func signIn1() (*Response, error) {
+// checkIn1 执行第一个网站的签到
+func checkIn1() (*Response, error) {
 	data := url.Values{}
 	data.Set("action", "daily_sign")
 
@@ -200,8 +186,8 @@ func login2() error {
 	return nil
 }
 
-// signIn2 执行第二个网站的签到
-func signIn2() (*Response, error) {
+// checkIn2 执行第二个网站的签到
+func checkIn2() (*Response, error) {
 	req, err := http.NewRequest(METHOD2, URL2, nil)
 	if err != nil {
 		return nil, fmt.Errorf("创建签到请求失败: %v", err)
@@ -221,11 +207,7 @@ func signIn2() (*Response, error) {
 	}
 
 	// 打印原始响应，帮助调试
-	if logger != nil {
-		logger.Printf("第二个网站原始响应: %s", string(body))
-	} else {
-		log.Printf("第二个网站原始响应: %s", string(body))
-	}
+	log.Printf("第二个网站原始响应: %s", string(body))
 
 	// 尝试解析为字符串类型的响应
 	var resultStr string
@@ -254,64 +236,51 @@ func signIn2() (*Response, error) {
 	}, nil
 }
 
-// retrySignIn1 带重试的第一个网站签到函数
-func retrySignIn1() (*Response, error) {
+// retryCheckIn1 带重试的第一个网站签到函数
+func retryCheckIn1() (*Response, error) {
 	var lastErr error
 	for i := 0; i < MAX_RETRIES; i++ {
 		// 每次尝试前先登录刷新cookie
 		if err := login1(); err != nil {
-			if logger != nil {
-				logger.Printf("第一个网站登录失败（第%d次尝试）: %v", i+1, err)
-			} else {
-				log.Printf("第一个网站登录失败（第%d次尝试）: %v", i+1, err)
-			}
+			log.Printf("第一个网站登录失败（第%d次尝试）: %v", i+1, err)
 			lastErr = err
 			time.Sleep(RETRY_DELAY)
 			continue
 		}
 
-		result, err := signIn1()
+		// 打印登录成功后的状态
+		log.Println("第一个网站登录成功，准备进行签到...")
+
+		result, err := checkIn1()
 		if err == nil {
 			return result, nil
 		}
 
-		if logger != nil {
-			logger.Printf("第一个网站签到失败（第%d次尝试）: %v", i+1, err)
-		} else {
-			log.Printf("第一个网站签到失败（第%d次尝试）: %v", i+1, err)
-		}
+		log.Printf("第一个网站签到失败（第%d次尝试）: %v", i+1, err)
 		lastErr = err
 		time.Sleep(RETRY_DELAY)
 	}
 	return nil, fmt.Errorf("达到最大重试次数，最后一次错误: %v", lastErr)
 }
 
-// retrySignIn2 带重试的第二个网站签到函数
-func retrySignIn2() (*Response, error) {
+// retryCheckIn2 带重试的第二个网站签到函数
+func retryCheckIn2() (*Response, error) {
 	var lastErr error
 	for i := 0; i < MAX_RETRIES; i++ {
 		// 每次尝试前先登录刷新cookie
 		if err := login2(); err != nil {
-			if logger != nil {
-				logger.Printf("第二个网站登录失败（第%d次尝试）: %v", i+1, err)
-			} else {
-				log.Printf("第二个网站登录失败（第%d次尝试）: %v", i+1, err)
-			}
+			log.Printf("第二个网站登录失败（第%d次尝试）: %v", i+1, err)
 			lastErr = err
 			time.Sleep(RETRY_DELAY)
 			continue
 		}
 
-		result, err := signIn2()
+		result, err := checkIn2()
 		if err == nil {
 			return result, nil
 		}
 
-		if logger != nil {
-			logger.Printf("第二个网站签到失败（第%d次尝试）: %v", i+1, err)
-		} else {
-			log.Printf("第二个网站签到失败（第%d次尝试）: %v", i+1, err)
-		}
+		log.Printf("第二个网站签到失败（第%d次尝试）: %v", i+1, err)
 		lastErr = err
 		time.Sleep(RETRY_DELAY)
 	}
@@ -319,43 +288,22 @@ func retrySignIn2() (*Response, error) {
 }
 
 func main() {
-	if logger != nil {
-		logger.Println("=========================================")
-		logger.Println("开始执行自动签到...")
-	} else {
-		logger.Println("=========================================")
-		log.Println("开始执行自动签到...")
-	}
+	log.Println("=========================================")
+	log.Println("开始执行自动签到...")
 
 	// 第一个网站签到
-	result1, err1 := retrySignIn1()
+	result1, err1 := retryCheckIn1()
 	if err1 != nil {
-		if logger != nil {
-			logger.Printf("第一个网站签到失败: %v", err1)
-		} else {
-			log.Printf("第一个网站签到失败: %v", err1)
-		}
+		log.Printf("第一个网站签到失败: %v", err1)
 	} else {
-		if logger != nil {
-			logger.Printf("第一个网站签到结果: Success=%s, Msg=%s", result1.Success, result1.Msg)
-		} else {
-			log.Printf("第一个网站签到结果: Success=%s, Msg=%s", result1.Success, result1.Msg)
-		}
+		log.Printf("第一个网站签到结果: Success=%s, Msg=%s", result1.Success, result1.Msg)
 	}
 
 	// 第二个网站签到
-	result2, err2 := retrySignIn2()
+	result2, err2 := retryCheckIn2()
 	if err2 != nil {
-		if logger != nil {
-			logger.Printf("第二个网站签到失败: %v", err2)
-		} else {
-			log.Printf("第二个网站签到失败: %v", err2)
-		}
+		log.Printf("第二个网站签到失败: %v", err2)
 	} else {
-		if logger != nil {
-			logger.Printf("第二个网站签到结果: Success=%s, Msg=%s", result2.Success, result2.Msg)
-		} else {
-			log.Printf("第二个网站签到结果: Success=%s, Msg=%s", result2.Success, result2.Msg)
-		}
+		log.Printf("第二个网站签到结果: Success=%s, Msg=%s", result2.Success, result2.Msg)
 	}
 }
