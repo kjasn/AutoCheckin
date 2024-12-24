@@ -33,12 +33,14 @@ type SecondResponse struct {
 }
 */
 
+/*
 // Config 配置结构体
 type Config struct {
 	Username    string `json:"username"`
 	Password    string `json:"password"`
 	ATestNumber string `json:"a_test_number"`
 }
+*/
 
 const (
 	BASE = "./"
@@ -57,34 +59,36 @@ const (
 		LOGIN_URL2 = "https://yxios.com/user-sign?tab=signin&redirect_to=https%3A%2F%2Fyxios.com%2Fuser%2Faccount"
 	*/
 
-	CONFIG_FILE = BASE + "config.json"
+	// CONFIG_FILE = BASE + "config.json"
 	MAX_RETRIES = 3
 	RETRY_DELAY = 5 * time.Second
 )
 
 var (
 	client *http.Client
-	// logger *log.Logger
-	config       Config
+	// config       Config
 	savedCookies []*http.Cookie
 )
 
 func init() {
-	// 读取配置文件
-	configData, err := os.ReadFile(CONFIG_FILE)
-	if err != nil {
-		log.Fatal("无法读取配置文件:", err)
-	}
+	/*
+			// 读取配置文件
+			configData, err := os.ReadFile(CONFIG_FILE)
+			if err != nil {
+			log.Fatal("无法读取配置文件:", err)
+		}
 
-	if err := json.Unmarshal(configData, &config); err != nil {
-		log.Fatal("解析配置文件失败:", err)
-	}
+		if err := json.Unmarshal(configData, &config); err != nil {
+			log.Fatal("解析配置文件失败:", err)
+		}
 
-	if config.Username == "" || config.Password == "" {
-		log.Fatal("配置文件中缺少用户名或密码")
-	}
+		if config.Username == "" || config.Password == "" {
+			log.Fatal("配置文件中缺少用户名或密码")
+		}
+	*/
 
-	log.Printf("Get a test number: %#v", config.ATestNumber)
+	A_TEST_NUMBER := os.Getenv("A_TEST_NUMBER")
+	log.Printf("Get a test number: %#v", A_TEST_NUMBER)
 
 	// 创建带cookie jar的HTTP客户端
 	jar, err := cookiejar.New(nil)
@@ -99,9 +103,11 @@ func init() {
 
 // login1 执行第一个网站的登录获取cookie
 func login1() error {
+	USERNAME := os.Getenv("USERNAME")
+	PASSWORD := os.Getenv("PASSWORD")
 	data := url.Values{}
-	data.Set("log", config.Username)
-	data.Set("pwd", config.Password)
+	data.Set("log", USERNAME)
+	data.Set("pwd", PASSWORD)
 	data.Set("wp-submit", "登录")
 	data.Set("redirect_to", "https://yc.yuchengyouxi.com/wp-admin/")
 	data.Set("testcookie", "1")

@@ -9,6 +9,9 @@ on:
     branches:
       - main
       - feature
+  pull_request:
+    branches:
+      - main
 jobs:
   checkin:
     runs-on: ubuntu-latest
@@ -28,6 +31,7 @@ jobs:
         env:
           USERNAME: ${{ secrets.USERNAME }}
           PASSWORD: ${{ secrets.PASSWORD }}
+          A_TEST_NUMBER: ${{ secrets.A_TEST_NUMBER }}
         run: |
           # 生成一个 1 到 10 分钟的随机延迟
           # DELAY=$((RANDOM % 10 + 1))
