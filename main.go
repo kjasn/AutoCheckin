@@ -116,6 +116,7 @@ func login1() error {
 		return fmt.Errorf("执行登录请求失败: %v", err)
 	}
 	defer resp.Body.Close()
+	log.Printf("登录响应: %#v", resp)
 
 	// 检查登录是否成功
 	if resp.StatusCode != http.StatusOK {
@@ -151,6 +152,7 @@ func checkIn1() (*FirstResponse, error) {
 		return nil, fmt.Errorf("执行签到请求失败: %v", err)
 	}
 	defer resp.Body.Close()
+	log.Printf("签到响应: %#v", resp)
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
