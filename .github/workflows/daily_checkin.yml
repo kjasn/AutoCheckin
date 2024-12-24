@@ -2,8 +2,8 @@ name: Daily Check-in
 
 on:
   schedule:
-    # 每天的 10:33 UTC 时间执行
-    - cron: "33 10 * * *"
+    # 每天定时执行
+    - cron: "50 17 * * *"
   push:
     # 当推送到 main 或 feature 分支时触发
     branches:

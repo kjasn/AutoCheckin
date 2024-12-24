@@ -33,15 +33,6 @@ type SecondResponse struct {
 }
 */
 
-/*
-// Config 配置结构体
-type Config struct {
-	Username    string `json:"username"`
-	Password    string `json:"password"`
-	ATestNumber string `json:"a_test_number"`
-}
-*/
-
 const (
 	BASE = "./"
 	// LOG  = BASE + "dailyCheckin.log"
@@ -59,37 +50,16 @@ const (
 		LOGIN_URL2 = "https://yxios.com/user-sign?tab=signin&redirect_to=https%3A%2F%2Fyxios.com%2Fuser%2Faccount"
 	*/
 
-	// CONFIG_FILE = BASE + "config.json"
 	MAX_RETRIES = 3
 	RETRY_DELAY = 5 * time.Second
 )
 
 var (
-	client *http.Client
-	// config       Config
+	client       *http.Client
 	savedCookies []*http.Cookie
 )
 
 func init() {
-	/*
-			// 读取配置文件
-			configData, err := os.ReadFile(CONFIG_FILE)
-			if err != nil {
-			log.Fatal("无法读取配置文件:", err)
-		}
-
-		if err := json.Unmarshal(configData, &config); err != nil {
-			log.Fatal("解析配置文件失败:", err)
-		}
-
-		if config.Username == "" || config.Password == "" {
-			log.Fatal("配置文件中缺少用户名或密码")
-		}
-	*/
-
-	A_TEST_NUMBER := os.Getenv("A_TEST_NUMBER")
-	log.Printf("Get a test number: %#v", A_TEST_NUMBER)
-
 	// 创建带cookie jar的HTTP客户端
 	jar, err := cookiejar.New(nil)
 	if err != nil {
@@ -125,7 +95,6 @@ func login1() error {
 		return fmt.Errorf("执行登录请求失败: %v", err)
 	}
 	defer resp.Body.Close()
-	log.Printf("登录响应: %#v", resp)
 
 	// 检查登录是否成功
 	if resp.StatusCode != http.StatusOK {
@@ -161,7 +130,6 @@ func checkIn1() (*FirstResponse, error) {
 		return nil, fmt.Errorf("执行签到请求失败: %v", err)
 	}
 	defer resp.Body.Close()
-	log.Printf("签到响应: %#v", resp)
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
