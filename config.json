@@ -1,4 +1,5 @@
 {
   "username": "${{ secrets.USERNAME }}",
-  "password": "${{ secrets.PASSWORD }}"
+  "password": "${{ secrets.PASSWORD }}",
+  "a_test_number": "${{ secrets.A_TEST_NUMBER }}"
 }

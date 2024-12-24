@@ -35,8 +35,9 @@ type SecondResponse struct {
 
 // Config 配置结构体
 type Config struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username    string `json:"username"`
+	Password    string `json:"password"`
+	ATestNumber string `json:"a_test_number"`
 }
 
 const (
@@ -82,6 +83,8 @@ func init() {
 	if config.Username == "" || config.Password == "" {
 		log.Fatal("配置文件中缺少用户名或密码")
 	}
+
+	log.Printf("Get a test number: %#v", config.ATestNumber)
 
 	// 创建带cookie jar的HTTP客户端
 	jar, err := cookiejar.New(nil)
