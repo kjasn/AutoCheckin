@@ -3,7 +3,7 @@ name: Daily Check-in
 on:
   schedule:
     # 每天定时执行
-    - cron: "50 17 * * *"
+    - cron: "33 10 * * *"
   push:
     # 当推送到 main 或 feature 分支时触发
     branches:
@@ -31,10 +31,11 @@ jobs:
         env:
           USERNAME: ${{ secrets.USERNAME }}
           PASSWORD: ${{ secrets.PASSWORD }}
-          A_TEST_NUMBER: ${{ secrets.A_TEST_NUMBER }}
         run: |
+          # 打印当前时间
+          echo $(date)
           # 生成一个 1 到 10 分钟的随机延迟
-          # DELAY=$((RANDOM % 10 + 1))
-          # echo "Sleeping for $DELAY minutes..."
-          # sleep "${DELAY}m"
+          DELAY=$((RANDOM % 10 + 1))
+          echo "Sleeping for $DELAY minutes..."
+          sleep "${DELAY}m"
           go run main.go
