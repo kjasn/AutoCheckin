@@ -11,48 +11,44 @@ import (
 	"net/url"
 	"os"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
-// FirstResponse 表示第一个网站的响应结构体
-type FirstResponse struct {
+// 签到任务响应结构体
+type TaskResponse struct {
 	Success string `json:"success"`
 	Msg     string `json:"msg"`
 }
 
-/*
-// SecondResponse 表示第二个网站的响应结构体
-type SecondResponse struct {
-	Msg  string `json:"msg"`
-	Data struct {
-		Integral int    `json:"integral"`
-		Points   int    `json:"points"`
-		Time     string `json:"time"`
-	} `json:"data"`
-	ContinuousDay int  `json:"continuous_day"`
-	Error         bool `json:"error"`
-}
-*/
-
 const (
-	BASE = "./"
-	// LOG  = BASE + "dailyCheckin.log"
-
-	// 第一个网站签到配置
-	URL1       = "https://yc.yuchengyouxi.com/wp-admin/admin-ajax.php"
-	METHOD1    = "POST"
-	LOGIN_URL1 = "https://yc.yuchengyouxi.com/wp-login.php"
-
-	/*
-		// 第二个网站签到配置
-		// URL2       = "https://yxios.com/wp-admin/admin-ajax.php?action=checkin_details_modal"
-		URL2       = "https://yxios.com/wp-admin/admin-ajax.php"
-		METHOD2    = "POST"
-		LOGIN_URL2 = "https://yxios.com/user-sign?tab=signin&redirect_to=https%3A%2F%2Fyxios.com%2Fuser%2Faccount"
-	*/
-
 	MAX_RETRIES = 3
 	RETRY_DELAY = 5 * time.Second
 )
+
+// 站点配置结构体
+type SiteConfig struct {
+	BaseURL    string
+	LoginURL   string
+	CheckInURL string
+	Method     string
+}
+
+// 站点配置
+var sites = []SiteConfig{
+	{
+		BaseURL:    "https://yc.yuchengyouxi.com/",
+		LoginURL:   "https://yc.yuchengyouxi.com/wp-login.php",
+		CheckInURL: "https://yc.yuchengyouxi.com/wp-admin/admin-ajax.php",
+		Method:     "POST",
+	},
+	{
+		BaseURL:    "https://ios.liferm.com/",
+		LoginURL:   "https://ios.liferm.com/wp-login.php",
+		CheckInURL: "https://ios.liferm.com/wp-admin/admin-ajax.php",
+		Method:     "POST",
+	},
+}
 
 var (
 	client       *http.Client
@@ -60,6 +56,11 @@ var (
 )
 
 func init() {
+	// 加载 .env 文件
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("加载配置文件(.env) 失败:", err)
+	}
+
 	// 创建带cookie jar的HTTP客户端
 	jar, err := cookiejar.New(nil)
 	if err != nil {
@@ -71,18 +72,18 @@ func init() {
 	}
 }
 
-// login1 执行第一个网站的登录获取cookie
-func login1() error {
+// login 登录网站，获取cookie
+func login(site SiteConfig) error {
 	USERNAME := os.Getenv("USERNAME")
 	PASSWORD := os.Getenv("PASSWORD")
 	data := url.Values{}
 	data.Set("log", USERNAME)
 	data.Set("pwd", PASSWORD)
 	data.Set("wp-submit", "登录")
-	data.Set("redirect_to", "https://yc.yuchengyouxi.com/wp-admin/")
+	data.Set("redirect_to", site.BaseURL+"wp-admin/")
 	data.Set("testcookie", "1")
 
-	req, err := http.NewRequest("POST", LOGIN_URL1, bytes.NewBufferString(data.Encode()))
+	req, err := http.NewRequest("POST", site.LoginURL, bytes.NewBufferString(data.Encode()))
 	if err != nil {
 		return fmt.Errorf("创建登录请求失败: %v", err)
 	}
@@ -107,12 +108,12 @@ func login1() error {
 	return nil
 }
 
-// checkIn1 执行第一个网站的签到
-func checkIn1() (*FirstResponse, error) {
+// checkIn 签到
+func checkIn(site SiteConfig) (*TaskResponse, error) {
 	data := url.Values{}
 	data.Set("action", "daily_sign")
 
-	req, err := http.NewRequest(METHOD1, URL1, bytes.NewBufferString(data.Encode()))
+	req, err := http.NewRequest(site.Method, site.CheckInURL, bytes.NewBufferString(data.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("创建签到请求失败: %v", err)
 	}
@@ -136,7 +137,7 @@ func checkIn1() (*FirstResponse, error) {
 		return nil, fmt.Errorf("读取响应失败: %v", err)
 	}
 
-	var result FirstResponse
+	var result TaskResponse
 	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, fmt.Errorf("解析响应失败: %v", err)
 	}
@@ -144,27 +145,27 @@ func checkIn1() (*FirstResponse, error) {
 	return &result, nil
 }
 
-// retryCheckIn1 带重试的第一个网站签到函数
-func retryCheckIn1() (*FirstResponse, error) {
+// retryCheckIn 带重试的网站签到函数
+func retryCheckIn(site SiteConfig) (*TaskResponse, error) {
 	var lastErr error
 	for i := 0; i < MAX_RETRIES; i++ {
 		// 每次尝试前先登录刷新cookie
-		if err := login1(); err != nil {
-			log.Printf("第一个网站登录失败（第%d次尝试）: %v", i+1, err)
+		if err := login(site); err != nil {
+			log.Printf("网站 %s 登录失败（第%d次尝试）: %v", site.BaseURL, i+1, err)
 			lastErr = err
 			time.Sleep(RETRY_DELAY)
 			continue
 		}
 
 		// 打印登录成功后的状态
-		log.Println("第一个网站登录成功，准备进行签到...")
+		log.Printf("网站 %s 登录成功，准备进行签到...", site.BaseURL)
 
-		result, err := checkIn1()
+		result, err := checkIn(site)
 		if err == nil {
 			return result, nil
 		}
 
-		log.Printf("第一个网站签到失败（第%d次尝试）: %v", i+1, err)
+		log.Printf("网站 %s 签到失败（第%d次尝试）: %v", site.BaseURL, i+1, err)
 		lastErr = err
 		time.Sleep(RETRY_DELAY)
 	}
@@ -175,11 +176,13 @@ func main() {
 	log.Println("=========================================")
 	log.Println("开始执行自动签到...")
 
-	// 第一个网站签到
-	result1, err1 := retryCheckIn1()
-	if err1 != nil {
-		log.Printf("第一个网站签到失败: %v", err1)
-	} else {
-		log.Printf("第一个网站签到结果: Success=%s, Msg=%s", result1.Success, result1.Msg)
+	for _, site := range sites {
+		log.Println("-----------------------------------------")
+		result, err := retryCheckIn(site)
+		if err != nil {
+			log.Printf("网站 %s 签到失败: %v", site.BaseURL, err)
+		} else {
+			log.Printf("网站 %s 签到结果: Success=%s, Msg=%s", site.BaseURL, result.Success, result.Msg)
+		}
 	}
 }

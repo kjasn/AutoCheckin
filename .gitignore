@@ -15,3 +15,6 @@ config.json.example
 # discard files
 discard/
 config.*
+
+# env files. 
+.env
