@@ -1,41 +1,41 @@
 name: Daily Check-in
 
 on:
-  schedule:
-    # 每天定时执行
-    - cron: "33 10 * * *"
-  push:
-    # 当推送到 main 或 feature 分支时触发
-    branches:
-      - main
-      - feature
-  pull_request:
-    branches:
-      - main
+    schedule:
+        # 每天定时执行 北京时间 10:33
+        - cron: "33 2 * * *" # mm hh
+    push:
+        # 当推送到 main 或 feature 分支时触发
+        branches:
+            - main
+            - feature
+    pull_request:
+        branches:
+            - main
 jobs:
-  checkin:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+    checkin:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v2
 
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: "1.22.5"
+            - name: Set up Go
+              uses: actions/setup-go@v2
+              with:
+                  go-version: "1.22.5"
 
-      - name: Install dependencies
-        run: go mod download
+            - name: Install dependencies
+              run: go mod download
 
-      - name: Run Check-in
-        env:
-          USERNAME: ${{ secrets.USERNAME }}
-          PASSWORD: ${{ secrets.PASSWORD }}
-        run: |
-          # 打印当前时间
-          echo $(date)
-          # 生成一个 1 到 10 分钟的随机延迟
-          DELAY=$((RANDOM % 10 + 1))
-          echo "Sleeping for $DELAY minutes..."
-          sleep "${DELAY}m"
-          go run main.go
+            - name: Run Check-in
+              env:
+                  USERNAME: ${{ secrets.USERNAME }}
+                  PASSWORD: ${{ secrets.PASSWORD }}
+              run: |
+                  # 打印当前时间
+                  echo $(date)
+                  # 生成一个 1 到 10 分钟的随机延迟
+                  DELAY=$((RANDOM % 10 + 1))
+                  echo "Sleeping for $DELAY minutes..."
+                  sleep "${DELAY}m"
+                  go run main.go
